@@ -9,23 +9,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 
 @Controller
 public class PdfExtractorController {
-        @Autowired
-        private PdfServiceImpl pdfService;
+    @Autowired
+    private PdfServiceImpl pdfService;
 
-        @PostMapping("/upload")
-        public ResponseEntity<String> uploadAndExtractResumeDataFromPDF(@RequestBody MultipartFile file) throws IOException {
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadAndExtractResumeDataFromPDF(@RequestBody MultipartFile file) throws IOException {
 
-
-
-            String data = pdfService.extractFileFromPdf(file);
-            return ResponseEntity.ok(data);
-        }
+        String data = pdfService.extractFileFromPdf(file);
+        return ResponseEntity.ok(data);
+    }
 
 
     @PostMapping("/create")

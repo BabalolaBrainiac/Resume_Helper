@@ -18,14 +18,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
 
@@ -48,6 +44,7 @@ public class PdfServiceImpl implements PdfService {
                 .toAbsolutePath().normalize();
 
         try {
+
             Files.createDirectories(this.fileStorageLocation);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -57,8 +54,7 @@ public class PdfServiceImpl implements PdfService {
 
     @Override
     public String extractFileFromPdf(MultipartFile file) throws IOException {
-
-        try (InputStream inputStream = file.getInputStream()) {
+        try {
 
             String fileName = file.getOriginalFilename();
 
@@ -69,11 +65,9 @@ public class PdfServiceImpl implements PdfService {
             pdfParser.parse();
             PDDocument pdDocument = new PDDocument(pdfParser.getDocument());
             PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper();
-           String string = pdfTextStripper.getText(pdDocument);
+            String string = pdfTextStripper.getText(pdDocument);
 
-
-            System.out.println(string);
-            return fileName;
+            return string;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -116,7 +110,7 @@ public class PdfServiceImpl implements PdfService {
                 cont.close();
 
                 document.save("filename");
-            };
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

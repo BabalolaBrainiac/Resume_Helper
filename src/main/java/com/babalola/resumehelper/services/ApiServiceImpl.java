@@ -1,60 +1,80 @@
 package main.java.com.babalola.resumehelper.services;
 
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-import jdk.jshell.spi.ExecutionControl;
+import io.reactivex.rxjava3.core.Single;
+import main.java.com.babalola.resumehelper.openai.utils.basics.CompletionRequest;
+import main.java.com.babalola.resumehelper.openai.utils.basics.CompletionResult;
+import main.java.com.babalola.resumehelper.openai.utils.chat.OpenAiCompletionRequest;
+import main.java.com.babalola.resumehelper.openai.utils.chat.OpenAiCompletionResponse;
+import okhttp3.ResponseBody;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import retrofit2.Call;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
 
 
 @Service
-public class ApiServiceImpl implements ApiService  {
+public class ApiServiceImpl implements ApiService {
+    @Autowired
+    PdfServiceImpl pdfService;
+    @Value("${openaiuri}")
+    private String openAiUrl;
+    OpenAiService openAiService = new OpenAiService(this.openAiUrl);
 
-    private final String  openAiUrl = "https://api.openai.com/v1/completions";
-
-    public ApiServiceImpl() throws MalformedURLException {
+    public ApiServiceImpl(PdfServiceImpl pdfService) {
+        this.pdfService = pdfService;
     }
 
     @Override
-    public String getNewResume(String oldResume, String jobDescription, String role) throws IOException {
+    public Single<CompletionResult> createCompletionFromPDF(MultipartFile file, String jobDescription, String role) {
+        CompletionRequest request = new CompletionRequest();
+        try {
 
-        String requestParam = "Edit this resume" + oldResume +":"+  "Ensure that it is SEO optimized, and also is ATS compliant" +
-                " for the role of " + role + "whose job description is " + ":"
-                + jobDescription;
-        URL url = new URL(openAiUrl);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Authorization","Bearer ");
-        connection.setRequestProperty("Accept", "application/json");
-        connection.setRequestProperty("Content-Type", "application/json");
-        connection.setDoOutput(true);
+            String oldResume = this.pdfService.extractFileFromPdf(file);
+//
+//            System.out.println(oldResume);
+//            System.out.println(jobDescription);
+//            System.out.println(role);
 
-        try (OutputStream os = connection.getOutputStream()) {
-            byte[] input = requestParam.getBytes("utf-8");
-            os.write(input, 0, input.length);
-        }
+            String requestParam = "Edit this resume" + oldResume + ":" + "Ensure that it is SEO optimized, and also is ATS compliant" +
+                    " for the role of " + role + "whose job description is " + ":"
+                    + jobDescription;
 
-        try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(connection.getInputStream(), "utf-8"))) {
-            StringBuilder response = new StringBuilder();
-            String responseLine = null;
-            while ((responseLine = br.readLine()) != null) {
-                response.append(responseLine.trim());
-            }
-            System.out.println(response);
+            request.setPrompt(requestParam);
 
-            return response.toString();
-        }
+            CompletionRequest completionRequest = CompletionRequest.builder()
+                    .prompt(request.getPrompt())
+                    .model(request.getModel())
+                    .echo(true)
+                    .build();
+            this.openAiService.createCompletion(completionRequest).getChoices().forEach(System.out::println);
+//
+            return null;
 
-        catch (IOException e) {
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+    }
+
+
+    @Override
+    public Call<ResponseBody> createCompletionStream(CompletionRequest request) {
+        return null;
+    }
+
+
+    @Override
+    public Single<OpenAiCompletionResponse> createChatCompletion(OpenAiCompletionRequest.ChatCompletionRequest request) {
+        return null;
+    }
+
+    @Override
+    public Call<ResponseBody> createChatCompletionStream(OpenAiCompletionRequest.ChatCompletionRequest request) {
+        return null;
     }
 }
